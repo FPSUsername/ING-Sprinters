@@ -78,7 +78,7 @@ With the ``/ing`` command, you can immediately see the current data of any sprin
 
 ``/ing AEX NL0013202294``
 
-| *AEX*  
+| **AEX**  
 | **Bied** *8,25*  
 | **Laat** *8,27*  
 | **% 1 dag** *5,22 %*  
