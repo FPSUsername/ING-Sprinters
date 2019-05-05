@@ -1,0 +1,5 @@
+python-telegram-bot==12.0.0b1
+functools
+uuid
+bs4
+requests
