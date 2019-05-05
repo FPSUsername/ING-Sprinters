@@ -186,7 +186,8 @@ def main():
     # Create the Updater and pass it your bot's token.
     try:
         with open("token.txt", "r") as file:
-            token = file.read()
+            token = file.read().strip()
+            logging.debug("Token: " + token)
 
         if not token:
             logging.info("Token file is empty!")
