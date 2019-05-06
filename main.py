@@ -75,7 +75,7 @@ def ing(update, context):
         return None
 
     query = query.split()
-    sprinter_name = "".join(query[:-1])
+    sprinter_name = " ".join(query[:-1])
     ISIN = query[-1]
 
     with open("markets.txt", "r") as file:
