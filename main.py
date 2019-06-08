@@ -1,13 +1,15 @@
 from telegram import ChatAction, InlineQueryResultArticle, InlineQueryResultDocument, ParseMode, InputTextMessageContent
 from telegram.ext import Updater, CommandHandler, InlineQueryHandler, MessageHandler
 from telegram.utils.helpers import escape_markdown
+from six.moves import cPickle as pickle
 from functools import wraps
 from uuid import uuid4
 
 import ing_sprinters
-import re
 import logging
 import time
+import re
+import os
 
 flag = False  # Flag to skip inline 1
 sprinter = ''  # Sprinter memory
@@ -46,8 +48,7 @@ def start(update, context):
 
 @send_typing_action
 def market(update, context):
-    query = update.message.text
-    query = query.replace("/market", "").strip()
+    query = update.message.text.replace("/market", "").strip()
 
     if not query:
         message = 'Type the market for information about the exchange rate:\n `/market AEX`'
@@ -66,8 +67,7 @@ def market(update, context):
 
 @send_typing_action
 def ing(update, context):
-    query = update.message.text
-    query = query.replace("/ing", "").strip()
+    query = update.message.text.replace("/ing", "").strip()
 
     if not query:
         message = 'Type the market and ISIN for information about the exchange rate of a sprinter:\n `/ing AEX NL0012065692`'
@@ -75,7 +75,7 @@ def ing(update, context):
         return None
 
     query = query.split()
-    sprinter_name = " ".join(query[:-1])
+    sprinter_name = "".join(query[:-1])
     ISIN = query[-1]
 
     with open("markets.txt", "r") as file:
@@ -177,6 +177,33 @@ def inline_query(update, context):
     update.inline_query.answer(results=results[offset:offset + 50], next_offset=str(offset + 50))
 
 
+def reply_keyboard(update, context):
+    user_id = update.message.user_id  # placeholder
+    # Something https://python-telegram-bot.readthedocs.io/en/stable/telegram.replykeyboardmarkup.html
+
+
+# Add market/sprinter to favorites
+@send_typing_action
+def add(update, context):
+    user_id = update.message.from_user['id']
+    query = update.message.text.replace("/add", "").strip()
+
+    message = ing_sprinters.add(user_id, query)
+
+    context.bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode='Markdown')
+
+
+# remove market or sprinter
+@send_typing_action
+def remove(update, context):
+    user_id = update.message.from_user['id']
+    query = update.message.text.replace("/remove", "").strip()
+
+    message = ing_sprinters.remove(user_id, query)
+
+    context.bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode='Markdown')
+
+
 def callback_market(context):
     ing_sprinters.markets()
     logging.debug("Market list updated!")
@@ -197,6 +224,13 @@ def main():
         logging.info("Token file not found!")
         raise SystemExit
 
+    try:
+        file = open('database.pkl', 'rb')
+        file.close()
+    except IOError:
+        file = open('database.pkl', 'wb')
+        file.close()
+
     updater = Updater(token, use_context=True)
     job = updater.job_queue
 
@@ -207,6 +241,8 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("ing", ing))
     dp.add_handler(CommandHandler("market", market))
+    dp.add_handler(CommandHandler("add", add))
+    dp.add_handler(CommandHandler("remove", remove))
 
     # on noncommand i.e message - echo the message on Telegram
     dp.add_handler(InlineQueryHandler(inline_query))

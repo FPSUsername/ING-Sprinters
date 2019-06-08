@@ -112,6 +112,90 @@ def sprinter_info(sprinter, ISIN):
         return None
 
 
+# Add market/sprinter to database
+def add(user_id, query):
+    if query:
+        if query.split()[-1].startswith("NL"):
+            ISIN = query.split()[-1]
+            query = "".join(query.split()[:-1])
+        else:
+            ISIN = ''
+
+        with open('database.pkl', 'rb') as file:
+            try:
+                data = pickle.load(file)
+            except EOFError:
+                data = {}
+
+        with open('database.pkl', 'wb') as file:
+            if user_id not in data.keys():  # Add user
+                data[user_id] = {}
+
+            if query not in data[user_id]:  # Add market
+                data[user_id][query] = []
+                message = "Market added!"
+            elif query in data[user_id]:
+                message = "Market already added!"
+
+            if ISIN and ISIN not in data[user_id][query]:  # Add ISIN to market
+                data[user_id][query].append(ISIN)
+                message = "Sprinter added!"
+            elif ISIN and ISIN in data[user_id][query]:
+                message = "Sprinter already added!"
+
+            pickle.dump(data, file)
+
+    else:
+        message = "Add a market with `/add market` or a sprinter with `/add market sprinter`"
+
+    return message
+
+
+# Remove market/sprinter from database
+def remove(user_id, query):
+    if query:
+        if query.split()[-1].startswith("NL"):
+            ISIN = query.split()[-1]
+            query = "".join(query.split()[:-1])
+        else:
+            ISIN = ''
+
+        with open('database.pkl', 'rb') as file:
+            try:
+                data = pickle.load(file)
+            except EOFError:
+                data = {}
+
+        with open('database.pkl', 'wb') as file:
+            if user_id not in data.keys():
+                message = "You're not in the database!"
+
+            else:  # User in database
+                if ISIN and ISIN in data[user_id][query]:  # Remove ISIN
+                    data[user_id][query].remove(ISIN)
+                    message = "Sprinter removed!"
+                elif ISIN and ISIN not in data[user_id][query]:
+                    message = "Sprinter is not in your favorites!"
+
+                if (query in data[user_id].keys()) and not ISIN:  # Remove market
+                    data[user_id].pop(query, None)
+                    message = "Market removed!"
+                elif (query not in data[user_id].keys()):
+                    message = "Market is not in your favorites!"
+
+                if query.lower() == 'me':
+                    data.pop(user_id, None)
+                    message = "User removed!"
+
+                logging.info(data)
+                pickle.dump(data, file)
+
+    else:
+        message = "Remove a market with `/remove market` or a sprinter with `/remove market sprinter`"
+
+    return message
+
+
 def test_functions():
     sprinter = "AEX Short"
     ISIN = "NL0012065692"
