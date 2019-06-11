@@ -86,26 +86,28 @@ def ing(update, context):
     keys = list(result.keys())
     values = list(result.values())
 
+    try:
+        if "-" in values[2]:
+            val1 = ⬇️
+        elif float(values[2]) != 0.00:
+            val1 = ⬆️
+
+        if "-" in values[5][1]:
+            val2 = ⬇️
+        elif "+" in values[5][1]:
+            val2 = ⬆️
+    except Exception as e:
+        logging.debug("Error:" + e)
+        val1 = ""
+        val2 = ""
+
     message = '*' + sprinter_name + '*' + \
-        "\n*%s*                           _%s_" % (keys[0], values[0]) +\
-        "\n*%s*                           _%s_" % (keys[1], values[1])
-
-    if "-" in values[2]:
-        message += "\n*%s*                    ⬇️ _%s_" % (keys[2], values[2])
-    elif float(values[2]) != 0.00:
-        message += "\n*%s*                   ⬆️ _%s_" % (keys[2], values[2])
-    else:
-        message += "\n*%s*                    _%s_" % (keys[2], values[2])
-
-    message += "\n*%s*                 _%s_" % (keys[3], values[3]) + \
-        "\n*%s*  _%s_" % (keys[4], values[4])
-
-    if "-" in values[5][1]:
-        message += "\n*%s*   _%s_ ⬇️ _%s_" % (keys[5], values[5][0], values[5][1])
-    elif "+" in values[5][1]:
-        message += "\n*%s*   _%s_ ⬆️ _%s_" % (keys[5], values[5][0], values[5][1])
-    else:
-        message += "\n*%s*   _%s_ _%s_" % (keys[5], values[5][0], values[5][1])
+        "\n*%s*                           _%s_" % (keys[0], values[0]) + \
+        "\n*%s*                           _%s_" % (keys[1], values[1]) + \
+        "\n*%s*                    _%s_ _%s_" % (keys[2], val1, values[2])
+        "\n*%s*                 _%s_" % (keys[3], values[3]) + \
+        "\n*%s*  _%s_" % (keys[4], values[4]) + \
+        "\n*%s*   _%s_ _%s_ _%s_" % (keys[5], values[5][0], val2, values[5][1])
 
     context.bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode='Markdown')
 
