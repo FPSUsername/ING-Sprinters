@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import ing_sprinters
 import logging
+import emoji
 import time
 import re
 import os
@@ -86,20 +87,15 @@ def ing(update, context):
     keys = list(result.keys())
     values = list(result.values())
 
-    try:
-        if "-" in values[2]:
-            val1 = ⬇️
-        elif float(values[2][:-2]) != 0.00:
-            val1 = ⬆️
+    if "-" in values[2]:
+        val1 = emoji.emojize(':down_arrow:')  # ⬇️
+    elif float(values[2][:-2]) != 0.00:
+        val1 = emoji.emojize(':up_arrow:')  # ⬆️
 
-        if "-" in values[5][1]:
-            val2 = ⬇️
-        elif "+" in values[5][1]:
-            val2 = ⬆️
-    except Exception as e:
-        logging.debug("Error:" + e)
-        val1 = ""
-        val2 = ""
+    if "-" in values[5][1]:
+        val2 = emoji.emojize(':down_arrow:')  # ⬇️
+    elif "+" in values[5][1]:
+        val2 = emoji.emojize(':up_arrow:')  # ⬆️
 
     message = '*' + sprinter_name + '*' + \
         "\n*%s*                           _%s_" % (keys[0], values[0]) + \
