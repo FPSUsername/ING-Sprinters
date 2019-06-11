@@ -89,7 +89,7 @@ def ing(update, context):
     try:
         if "-" in values[2]:
             val1 = ⬇️
-        elif float(values[2]) != 0.00:
+        elif float(values[2][:-2]) != 0.00:
             val1 = ⬆️
 
         if "-" in values[5][1]:
