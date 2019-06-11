@@ -89,7 +89,7 @@ def ing(update, context):
 
     if "-" in values[2]:
         val1 = emoji.emojize(':down_arrow:')  # ⬇️
-    elif float(values[2][:-2]) != 0.00:
+    elif float(values[2][:-2].replace(",", ".")) != 0.00:
         val1 = emoji.emojize(':up_arrow:')  # ⬆️
 
     if "-" in values[5][1]:
