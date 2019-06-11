@@ -87,6 +87,9 @@ def ing(update, context):
     keys = list(result.keys())
     values = list(result.values())
 
+    val1 = ""
+    val2 = ""
+
     if "-" in values[2]:
         val1 = emoji.emojize(':down_arrow:')  # ⬇️
     elif float(values[2][:-2].replace(",", ".")) != 0.00:
