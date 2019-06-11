@@ -86,13 +86,26 @@ def ing(update, context):
     keys = list(result.keys())
     values = list(result.values())
 
-    message = '*' + sprinter_name + '*'
-    message += "\n*%s*                           _%s_" % (keys[0], values[0])
-    message += "\n*%s*                           _%s_" % (keys[1], values[1])
-    message += "\n*%s*                    _%s_" % (keys[2], values[2])
-    message += "\n*%s*                 _%s_" % (keys[3], values[3])
-    message += "\n*%s*  _%s_" % (keys[4], values[4])
-    message += "\n*%s*   _%s_ _%s_" % (keys[5], values[5][0], values[5][1])
+    message = '*' + sprinter_name + '*' + \
+        "\n*%s*                           _%s_" % (keys[0], values[0]) +\
+        "\n*%s*                           _%s_" % (keys[1], values[1])
+
+    if "-" in values[2]:
+        message += "\n*%s*                    ⬇️ _%s_" % (keys[2], values[2])
+    elif "+" in values[2]:
+        message += "\n*%s*                   ⬆️ _%s_" % (keys[2], values[2])
+    else:
+        message += "\n*%s*                    _%s_" % (keys[2], values[2])
+
+    message += "\n*%s*                 _%s_" % (keys[3], values[3]) + \
+        "\n*%s*  _%s_" % (keys[4], values[4])
+
+    if "-" in values[5][1]:
+        message += "\n*%s*   _%s_ ⬇️ _%s_" % (keys[5], values[5][0], values[5][1])
+    elif "+" in values[5][1]:
+        message += "\n*%s*   _%s_ ⬆️ _%s_" % (keys[5], values[5][0], values[5][1])
+    else:
+        message += "\n*%s*   _%s_ _%s_" % (keys[5], values[5][0], values[5][1])
 
     context.bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode='Markdown')
 
