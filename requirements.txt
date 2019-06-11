@@ -1,5 +1,5 @@
 python-telegram-bot==12.0.0b1
-functools
-uuid
-bs4
-requests
+uuid>=1.30
+bs4>=0.0.1
+requests>=2.22.0
+emoji>=0.5.2
