@@ -104,7 +104,7 @@ def ing(update, context):
     message = '*' + sprinter_name + '*' + \
         "\n*%s*                           _%s_" % (keys[0], values[0]) + \
         "\n*%s*                           _%s_" % (keys[1], values[1]) + \
-        "\n*%s*                    _%s_ _%s_" % (keys[2], val1, values[2])
+        "\n*%s*                    _%s_ _%s_" % (keys[2], val1, values[2]) + \
         "\n*%s*                 _%s_" % (keys[3], values[3]) + \
         "\n*%s*  _%s_" % (keys[4], values[4]) + \
         "\n*%s*   _%s_ _%s_ _%s_" % (keys[5], values[5][0], val2, values[5][1])
