@@ -92,7 +92,7 @@ def ing(update, context):
 
     if "-" in values[2]:
         message += "\n*%s*                    ⬇️ _%s_" % (keys[2], values[2])
-    elif "+" in values[2]:
+    elif float(values[2]) != 0.00:
         message += "\n*%s*                   ⬆️ _%s_" % (keys[2], values[2])
     else:
         message += "\n*%s*                    _%s_" % (keys[2], values[2])
