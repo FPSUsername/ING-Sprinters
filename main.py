@@ -42,8 +42,6 @@ def send_typing_action(func):
 
 @send_typing_action
 def start(update, context):
-    query = update.message.text
-    query = query.replace("/market", "").strip()
     context.bot.send_message(chat_id=update.message.chat_id, text='I send the stock exchange rates for ING Sprinters!')
 
 
@@ -59,9 +57,16 @@ def market(update, context):
     result = ing_sprinters.market_info(query)
     key = list(result.keys())
     value = list(result.values())
+    percentage = value[0].split(" ")[1]
+    val1 = ""
+
+    if "-" in percentage:
+        val1 = emoji.emojize(':down_arrow:')  # ⬇️
+    elif float(percentage.replace(",", ".")) != 0.00:
+        val1 = emoji.emojize(':up_arrow:')  # ⬆️
 
     message = '*' + query + '*'
-    message += "\n*%s* _%s_" % (key[0], value[0])
+    message += "\n*%s* _%s_ _%s_" % (key[0], val1, value[0])
 
     context.bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode='Markdown')
 
@@ -76,7 +81,7 @@ def ing(update, context):
         return None
 
     query = query.split()
-    sprinter_name = "".join(query[:-1])
+    sprinter_name = " ".join(query[:-1])
     ISIN = query[-1]
 
     with open("markets.txt", "r") as file:
@@ -106,7 +111,7 @@ def ing(update, context):
         "\n*%s*                    _%s_ _%s_" % (keys[2], val1, values[2]) + \
         "\n*%s*                 _%s_" % (keys[3], values[3]) + \
         "\n*%s*  _%s_" % (keys[4], values[4]) + \
-        "\n*%s*   _%s_ _%s_ _%s_" % (keys[5], values[5][0], val2, values[5][1])
+        "\n*%s*   _%s_ _%s_ _%s_" % (keys[5], val2, values[5][0], values[5][1])
 
     context.bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode='Markdown')
 
