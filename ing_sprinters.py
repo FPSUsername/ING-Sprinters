@@ -1,6 +1,153 @@
+from collections import defaultdict
 from bs4 import BeautifulSoup
+from emoji import emojize
 import requests
 import re
+import _pickle as pickle
+
+
+# Check database
+def database():
+    with open('database.pkl', 'rb') as file:
+        try:
+            data = pickle.load(file)
+            # Output user's data, not everything
+        except EOFError:
+            data = {}
+
+    return data
+
+
+# New user
+def new_user(user_id):
+    data = database()
+
+    with open('database.pkl', 'wb') as file:
+        data[user_id] = {
+            "Track": {},
+            "Settings": {
+                "ISIN": "✅Enabled",
+                "Bied": "✅Enabled",
+                "Laat": "✅Enabled",
+                "%1 dag": "✅Enabled",
+                "Hefboom": "✅Enabled",
+                "Stop loss-niveau": "✅Enabled",
+                "Referentie": "✅Enabled"
+            }
+        }
+
+        pickle.dump(data, file)
+
+
+# User settings
+def settings(user_id, query):
+    data = database()
+
+    with open('database.pkl', 'wb') as file:
+        if data[user_id]["Settings"][query] == "✅Enabled":
+            data[user_id]["Settings"][query] = "❌Disabled"
+        else:
+            data[user_id]["Settings"][query] = "✅Enabled"
+
+        pickle.dump(data, file)
+
+    return data[user_id]["Settings"][query]
+
+
+# Add sprinter to database
+def add(user_id, query):
+    ISIN = str(query.split()[-1])
+    query = str(" ".join(query.split()[:-1]))
+
+    data = database()
+
+    with open('database.pkl', 'wb') as file:
+        if user_id not in data.keys():  # Add user
+            new_user(user_id)
+
+        # if query not in data[user_id]["Track"]:
+        #     data[user_id]["Track"][query] = []
+
+        # data[user_id]["Track"][query].append(ISIN)
+
+        data[user_id]["Track"].setdefault(query, []).append(ISIN)
+
+        message = "Sprinter added!"
+
+        pickle.dump(data, file)
+
+    return message
+
+
+# Remove sprinter from database
+def remove(user_id, query):
+    ISIN = query.split()[-1]
+    query = "".join(query.split()[:-1])
+
+    data = database()
+
+    with open('database.pkl', 'wb') as file:
+        if user_id not in data.keys():  # Add user
+            new_user(user_id)
+
+        try:
+            data[user_id]["Track"][query].remove(ISIN)
+        except ValueError:
+            message = "Sprinter not found!"
+
+        if data[user_id]["Track"][query] == []:
+            data[user_id]["Track"].pop(query, None)
+
+        message = "Sprinter removed!"
+
+        pickle.dump(data, file)
+
+    return message
+
+
+def add_to_list(user_id, sprinter_name, ISIN):
+    result = sprinter_info(sprinter_name, ISIN)
+    data = database()
+    data = data[user_id]["Settings"]
+
+    if result is not None:
+        keys = list(result.keys())
+        values = list(result.values())
+
+        message = ""
+        val1 = ""
+        val2 = ""
+
+        if "-" in values[2]:
+            val1 = emojize(':down_arrow:')  # ⬇️
+        elif float(values[2][:-2].replace(",", ".")) != 0.00:
+            val1 = emojize(':up_arrow:')  # ⬆️
+
+        if "-" in values[5][1]:
+            val2 = emojize(':down_arrow:')  # ⬇️
+        elif "+" in values[5][1]:
+            val2 = emojize(':up_arrow:')  # ⬆️
+
+        message = '*' + sprinter_name + '*'
+        if data["ISIN"] == "✅Enabled":
+            message += ("\n*ISIN*                            _%s_" % (ISIN))
+        if data["Bied"] == "✅Enabled":
+            message += ("\n*%s*                           _%s_" % (keys[0], values[0]))
+        if data["Laat"] == "✅Enabled":
+            message += ("\n*%s*                           _%s_" % (keys[1], values[1]))
+        if data["%1 dag"] == "✅Enabled":
+            message += ("\n*%s*                    _%s_ _%s_" % (keys[2], val1, values[2]))
+        if data["Hefboom"] == "✅Enabled":
+            message += ("\n*%s*                 _%s_" % (keys[3], values[3]))
+        if data["Stop loss-niveau"] == "✅Enabled":
+            message += ("\n*%s*  _%s_" % (keys[4], values[4]))
+        if data["Referentie"] == "✅Enabled":
+            message += ("\n*%s*   _%s_ _%s_ _%s_\n\n" % (keys[5], val2, values[5][0], values[5][1]))
+
+        return message
+
+    else:
+        return None
 
 
 # Get list of markets
@@ -93,8 +240,8 @@ def sprinter_info(sprinter, ISIN):
 
         data = soup.find("div", class_="meta-block__row")
 
-        for key, value in payload.items():
-            print(key, value.text.strip())
+        # for key, value in payload.items():
+        #     print(key, value.text.strip())
 
         name = data.find_all("h3", class_="meta__heading no-margin")
         date = data.find_all("span", class_=lambda x: x and x.startswith(
@@ -110,96 +257,3 @@ def sprinter_info(sprinter, ISIN):
 
     else:
         return None
-
-
-# Add market/sprinter to database
-def add(user_id, query):
-    if query:
-        if query.split()[-1].startswith("NL"):
-            ISIN = query.split()[-1]
-            query = "".join(query.split()[:-1])
-        else:
-            ISIN = ''
-
-        with open('database.pkl', 'rb') as file:
-            try:
-                data = pickle.load(file)
-            except EOFError:
-                data = {}
-
-        with open('database.pkl', 'wb') as file:
-            if user_id not in data.keys():  # Add user
-                data[user_id] = {}
-
-            if query not in data[user_id]:  # Add market
-                data[user_id][query] = []
-                message = "Market added!"
-            elif query in data[user_id]:
-                message = "Market already added!"
-
-            if ISIN and ISIN not in data[user_id][query]:  # Add ISIN to market
-                data[user_id][query].append(ISIN)
-                message = "Sprinter added!"
-            elif ISIN and ISIN in data[user_id][query]:
-                message = "Sprinter already added!"
-
-            pickle.dump(data, file)
-
-    else:
-        message = "Add a market with `/add market` or a sprinter with `/add market sprinter`"
-
-    return message
-
-
-# Remove market/sprinter from database
-def remove(user_id, query):
-    if query:
-        if query.split()[-1].startswith("NL"):
-            ISIN = query.split()[-1]
-            query = "".join(query.split()[:-1])
-        else:
-            ISIN = ''
-
-        with open('database.pkl', 'rb') as file:
-            try:
-                data = pickle.load(file)
-            except EOFError:
-                data = {}
-
-        with open('database.pkl', 'wb') as file:
-            if user_id not in data.keys():
-                message = "You're not in the database!"
-
-            else:  # User in database
-                if ISIN and ISIN in data[user_id][query]:  # Remove ISIN
-                    data[user_id][query].remove(ISIN)
-                    message = "Sprinter removed!"
-                elif ISIN and ISIN not in data[user_id][query]:
-                    message = "Sprinter is not in your favorites!"
-
-                if (query in data[user_id].keys()) and not ISIN:  # Remove market
-                    data[user_id].pop(query, None)
-                    message = "Market removed!"
-                elif (query not in data[user_id].keys()):
-                    message = "Market is not in your favorites!"
-
-                if query.lower() == 'me':
-                    data.pop(user_id, None)
-                    message = "User removed!"
-
-                logging.info(data)
-                pickle.dump(data, file)
-
-    else:
-        message = "Remove a market with `/remove market` or a sprinter with `/remove market sprinter`"
-
-    return message
-
-
-def test_functions():
-    sprinter = "AEX Short"
-    ISIN = "NL0012065692"
-
-    print(markets())
-    print(sprinter_list(sprinter))
-    print(sprinter_info(sprinter, ISIN))
