@@ -96,7 +96,7 @@ def button(update, context):
 
 @send_typing_action
 def reply(update, context):
-    global add, remove
+    global add, remove, keyboard
     query = update.message.text
     query_st = query[1:].strip()
 
@@ -174,6 +174,10 @@ def reply(update, context):
                 (value[0] + key), callback_data=key)])
 
         reply_markup = InlineKeyboardMarkup(keyboard)
+
+    else:
+        message = "Welcome back!"
+        keyboard = keyboard
 
     context.bot.send_message(chat_id=update.message.chat_id,
                              text=message,
