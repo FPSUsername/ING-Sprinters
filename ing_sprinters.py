@@ -6,6 +6,13 @@ import re
 import _pickle as pickle
 
 
+# Paging
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+
 # Check database
 def database():
     with open('database.pkl', 'rb') as file:
@@ -25,6 +32,7 @@ def new_user(user_id):
     with open('database.pkl', 'wb') as file:
         data[user_id] = {
             "Track": {},
+            "List": None,
             "Settings": {
                 "ISIN": "✅Enabled",
                 "Bied": "✅Enabled",
@@ -55,9 +63,15 @@ def settings(user_id, query):
 
 
 # Add sprinter to database
-def add(user_id, query):
-    ISIN = str(query.split()[-1])
-    query = str(" ".join(query.split()[:-1]))
+def add(user_id, ISIN):
+    market = sprinter_check(ISIN)
+
+    if market is False:
+        return None
+
+    if market is None:
+        message = "Something went wrong, try again later!"
+        return message
 
     data = database()
 
@@ -65,12 +79,7 @@ def add(user_id, query):
         if user_id not in data.keys():  # Add user
             new_user(user_id)
 
-        # if query not in data[user_id]["Track"]:
-        #     data[user_id]["Track"][query] = []
-
-        # data[user_id]["Track"][query].append(ISIN)
-
-        data[user_id]["Track"].setdefault(query, []).append(ISIN)
+        data[user_id]["Track"].setdefault(market, []).append(ISIN)
 
         message = "Sprinter added!"
 
@@ -105,49 +114,48 @@ def remove(user_id, query):
     return message
 
 
-def add_to_list(user_id, sprinter_name, ISIN):
-    result = sprinter_info(sprinter_name, ISIN)
+def add_to_list(user_id, sprinter, ISIN):
+    result = sprinter_info(ISIN)
+    if result is None:
+        return ''
+
     data = database()
     data = data[user_id]["Settings"]
 
-    if result is not None:
-        keys = list(result.keys())
-        values = list(result.values())
+    keys = list(result.keys())
+    values = list(result.values())
 
-        message = ""
-        val1 = ""
-        val2 = ""
+    message = ""
+    val1 = ""
+    val2 = ""
 
-        if "-" in values[2]:
-            val1 = emojize(':down_arrow:')  # ⬇️
-        elif float(values[2][:-2].replace(",", ".")) != 0.00:
-            val1 = emojize(':up_arrow:')  # ⬆️
+    if "-" in values[2]:
+        val1 = emojize(':down_arrow:')  # ⬇️
+    elif float(values[2][:-2].replace(",", ".")) != 0.00:
+        val1 = emojize(':up_arrow:')  # ⬆️
 
-        if "-" in values[5][1]:
-            val2 = emojize(':down_arrow:')  # ⬇️
-        elif "+" in values[5][1]:
-            val2 = emojize(':up_arrow:')  # ⬆️
+    if "-" in values[5][1]:
+        val2 = emojize(':down_arrow:')  # ⬇️
+    elif "+" in values[5][1]:
+        val2 = emojize(':up_arrow:')  # ⬆️
 
-        message = '*' + sprinter_name + '*'
-        if data["ISIN"] == "✅Enabled":
-            message += ("\n*ISIN*                            _%s_" % (ISIN))
-        if data["Bied"] == "✅Enabled":
-            message += ("\n*%s*                           _%s_" % (keys[0], values[0]))
-        if data["Laat"] == "✅Enabled":
-            message += ("\n*%s*                           _%s_" % (keys[1], values[1]))
-        if data["%1 dag"] == "✅Enabled":
-            message += ("\n*%s*                    _%s_ _%s_" % (keys[2], val1, values[2]))
-        if data["Hefboom"] == "✅Enabled":
-            message += ("\n*%s*                 _%s_" % (keys[3], values[3]))
-        if data["Stop loss-niveau"] == "✅Enabled":
-            message += ("\n*%s*  _%s_" % (keys[4], values[4]))
-        if data["Referentie"] == "✅Enabled":
-            message += ("\n*%s*   _%s_ _%s_ _%s_\n\n" % (keys[5], val2, values[5][0], values[5][1]))
+    message = '*' + sprinter + '*'
+    if data["ISIN"] == "✅Enabled":
+        message += ("\n*ISIN*                            _%s_" % (ISIN))
+    if data["Bied"] == "✅Enabled":
+        message += ("\n*%s*                           _%s_" % (keys[0], values[0]))
+    if data["Laat"] == "✅Enabled":
+        message += ("\n*%s*                           _%s_" % (keys[1], values[1]))
+    if data["%1 dag"] == "✅Enabled":
+        message += ("\n*%s*                    _%s_ _%s_" % (keys[2], val1, values[2]))
+    if data["Hefboom"] == "✅Enabled":
+        message += ("\n*%s*                 _%s_" % (keys[3], values[3]))
+    if data["Stop loss-niveau"] == "✅Enabled":
+        message += ("\n*%s*  _%s_" % (keys[4], values[4]))
+    if data["Referentie"] == "✅Enabled":
+        message += ("\n*%s*   _%s_ _%s_ _%s_\n\n" % (keys[5], val2, values[5][0], values[5][1]))
 
-        return message
-
-    else:
-        return None
+    return message
 
 
 # Get list of markets
@@ -166,8 +174,10 @@ def markets():
         for x in range(0, len(names)):
             payload.append(names[x].get_text().strip().replace("é", "e"))
 
-        file = open("markets.txt", "w")
-        file.write(str(payload))
+        data = database()
+        with open('database.pkl', 'wb') as file:
+            data["markets"] = payload
+            pickle.dump(data, file)
         return payload
 
     else:
@@ -202,18 +212,16 @@ def market_info(market):
 # Get list of current long and short sprinters from a certain market
 # Expects a string (generated by markets()) that contains Long or Short (added to the string) at the end
 def sprinter_list(sprinter):
-    sprinter = sprinter.replace('(', '')
-    sprinter = sprinter.replace(')', '')
     query = sprinter.split()
 
-    url = 'https://www.ingsprinters.nl/markten/indices/' + '-'.join(query[:-1])
+    url = 'https://www.ingsprinters.nl/zoeken?q=' + ' '.join(query[:-1])
 
     r = requests.get(url)
     if r.status_code == 200:
         payload = {}
         soup = BeautifulSoup(r.content, "html.parser")
 
-        data = soup.find_all("a", class_="fill-cell font-narrow tick__text")
+        data = soup.find_all("a", class_="fill-cell")
         for item in data:
             if query[-1].capitalize() in item.get_text():
                 payload[item.get_text()] = re.sub(r'.*/NL', 'NL', item.get('href'))
@@ -225,13 +233,11 @@ def sprinter_list(sprinter):
 
 
 # Get data from the sprinter
-# Expects sprinter name and ISIN (generated by sprinter_list())
-def sprinter_info(sprinter, ISIN):
-    sprinter = sprinter.replace('(', '')
-    sprinter = sprinter.replace(')', '')
-    sprinter = sprinter.replace(' ', '-')
-
-    url = 'https://www.ingsprinters.nl/markten/indices/' + sprinter + '/' + ISIN
+# Expects sprinter ISIN (generated by sprinter_list())
+# To do:
+# - Add check if sprinter still exists
+def sprinter_info(ISIN):
+    url = 'https://www.ingsprinters.nl/zoeken?q=' + ISIN
 
     r = requests.get(url)
     if r.status_code == 200:
@@ -239,10 +245,6 @@ def sprinter_info(sprinter, ISIN):
         soup = BeautifulSoup(r.content, "html.parser")
 
         data = soup.find("div", class_="meta-block__row")
-
-        # for key, value in payload.items():
-        #     print(key, value.text.strip())
-
         name = data.find_all("h3", class_="meta__heading no-margin")
         date = data.find_all("span", class_=lambda x: x and x.startswith(
             'meta__value meta__value--l'))
@@ -255,5 +257,24 @@ def sprinter_info(sprinter, ISIN):
 
         return payload
 
+    else:
+        return None
+
+
+# Checks if the sprinter exists
+def sprinter_check(ISIN):
+    url = 'https://www.ingsprinters.nl/zoeken?q=' + ISIN
+
+    r = requests.get(url)
+
+    if r.status_code == 200:
+        soup = BeautifulSoup(r.content, "html.parser")
+        data = soup.find("div", class_="container")
+
+        if "'noSearchResults': true" in data.text:
+            return False
+        else:
+            market = soup.find("span", itemprop="name")
+            return market.text
     else:
         return None

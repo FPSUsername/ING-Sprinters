@@ -85,7 +85,45 @@ def home(update, context, message):
                              reply_markup=reply_markup)
 
 
-def button(update, context):
+# Callback for list paging
+def callback_paging(update, context):
+    user_id = update._effective_user['id']
+    query = update.callback_query
+    offset = int(query.data)
+
+    # Load paged data
+    with open('database.pkl', 'rb') as file:
+        try:
+            data = pickle.load(file)
+            message_list = data[user_id]["List"]
+            message = ''
+        except EOFError:
+            return None
+
+    for item in message_list[offset][0]:
+        message += item
+
+    # Determine button layout
+    keyboard = [[
+        InlineKeyboardButton("Previous", callback_data=offset - 1),
+        InlineKeyboardButton("Next", callback_data=offset + 1)
+    ]]
+    if offset == 0:  # Next only
+        keyboard[0].pop(0)
+        print(keyboard)
+    if offset == len(message_list) - 1:  # Previous only
+        keyboard[0].pop(1)
+        print(keyboard)
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    query.edit_message_text(text=message,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup)
+
+
+# Callback for settings
+def callback_settings(update, context):
     user_id = update._effective_user['id']
     query = update.callback_query
 
@@ -94,6 +132,7 @@ def button(update, context):
     query.edit_message_text(text="{}".format(query.data) + " is %s" % (data[1:].lower()))
 
 
+# Bot actions when messages are sent to the bot
 @send_typing_action
 def reply(update, context):
     global add, remove, keyboard
@@ -137,9 +176,23 @@ def reply(update, context):
     elif query_st == "List":
         data = ing_sprinters.database()
         if data and data[user_id]["Track"].items():
-            for key, val in data[user_id]["Track"].items():
-                for item in val:
-                    message += ing_sprinters.add_to_list(user_id, key, item)
+            message_list = []
+            for key, value in data[user_id]["Track"].items():
+                for item in value:
+                    message_list.append(ing_sprinters.add_to_list(user_id, key, item))
+
+            message_list = list(ing_sprinters.chunks(message_list, 5))  # 5 items per page (message)
+
+            for item in message_list[0]:
+                message += item
+            if len(message_list) > 1:
+                data = ing_sprinters.database()
+                with open('database.pkl', 'wb') as file:
+                    data[user_id]["List"] = message_list
+                    pickle.dump(data, file)
+
+                keyboard = [[InlineKeyboardButton("Next", callback_data=1)]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
         else:
             message = "Your list is empty!"
 
@@ -227,11 +280,20 @@ def ing(update, context):
     sprinter_name = " ".join(query[:-1])
     ISIN = query[-1]
 
-    with open("markets.txt", "r") as file:
-        if not (sprinter_name in file.read()):
-            return None
+    data = ing_sprinters.database()
+    with open('database.pkl', 'rb') as file:
+            try:
+                data = pickle.load(file)
+                if not (sprinter_name in data['markets']):
+                    return None
+            except EOFError:
+                return None
 
-    result = ing_sprinters.sprinter_info(sprinter_name, ISIN)
+    # with open("markets.txt", "r") as file:
+    #     if not (sprinter_name in file.read()):
+    #         return None
+
+    result = ing_sprinters.sprinter_info(ISIN)
 
     if result is not None:
         keys = list(result.keys())
@@ -278,8 +340,13 @@ def inline_query(update, context):
         logging.debug("Inline 1")
         results = []
 
-        with open("markets.txt", "r") as file:
-            titles = eval(file.read())
+        data = ing_sprinters.database()
+        with open('database.pkl', 'rb') as file:
+                try:
+                    data = pickle.load(file)
+                    titles = data['markets']
+                except EOFError:
+                    return None
 
         for item in titles:
             if item.lower().startswith(query.lower()):
@@ -438,7 +505,8 @@ def main():
 
     dp.add_handler(InlineQueryHandler(inline_query))
     dp.add_handler(MessageHandler(Filters.text, reply))
-    dp.add_handler(CallbackQueryHandler(button))
+    dp.add_handler(CallbackQueryHandler(callback_settings, pattern="^(.*[a-zA-Z% -])$"))
+    dp.add_handler(CallbackQueryHandler(callback_paging, pattern="^([0-9])+$"))
 
     # log all errors
     dp.add_error_handler(error)
@@ -447,7 +515,7 @@ def main():
     updater.start_polling()
     logging.info("Bot started successfully!")
     job.run_repeating(callback_market, interval=86400,
-                      first=0)  # Update markets once a day
+                      first=1)  # Update markets once a day
     job.run_repeating(backup, interval=86400,
                       first=1)  # Backup database once a day
 
