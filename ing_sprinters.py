@@ -274,7 +274,7 @@ def sprinter_check(ISIN):
         if "'noSearchResults': true" in data.text:
             return False
         else:
-            market = soup.find("span", itemprop="name")
+            market = soup.find_all("span", itemprop="name")[1]
             return market.text
     else:
         return None

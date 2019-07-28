@@ -110,10 +110,8 @@ def callback_paging(update, context):
     ]]
     if offset == 0:  # Next only
         keyboard[0].pop(0)
-        print(keyboard)
     if offset == len(message_list) - 1:  # Previous only
         keyboard[0].pop(1)
-        print(keyboard)
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -149,7 +147,6 @@ def reply(update, context):
 
     if add is True:
         add = False
-        print(query)
         message = ing_sprinters.add(user_id, query)
 
         if not message:
