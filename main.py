@@ -232,7 +232,8 @@ def reply(update, context):
     context.bot.send_message(chat_id=update.message.chat_id,
                              text=message,
                              parse_mode='Markdown',
-                             reply_markup=reply_markup)
+                             reply_markup=reply_markup,
+                             disable_web_page_preview=True)
 
 
 @send_typing_action

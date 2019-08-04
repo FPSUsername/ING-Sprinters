@@ -139,9 +139,9 @@ def add_to_list(user_id, sprinter, ISIN):
     elif "+" in values[5][1]:
         val2 = emojize(':up_arrow:')  # ⬆️
 
-    message = '*' + sprinter + '*'
+    message = '[' + sprinter + '](https://www.ingsprinters.nl/markten/indices/' + sprinter + ')'
     if data["ISIN"] == "✅Enabled":
-        message += ("\n*ISIN*                            _%s_" % (ISIN))
+        message += ("\n*ISIN*                            [%s](https://www.ingsprinters.nl/zoeken?q=%s)" % (ISIN, ISIN))
     if data["Bied"] == "✅Enabled":
         message += ("\n*%s*                           _%s_" % (keys[0], values[0]))
     if data["Laat"] == "✅Enabled":
