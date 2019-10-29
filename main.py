@@ -228,6 +228,10 @@ def reply(update, context):
     else:
         message = "Welcome back!"
         keyboard = keyboard
+        reply_markup = ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True,
+            one_time_keyboard=False)
 
     context.bot.send_message(chat_id=update.message.chat_id,
                              text=message,
