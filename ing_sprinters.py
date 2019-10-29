@@ -1,7 +1,6 @@
+from requests_html import HTMLSession
 from collections import defaultdict
-from bs4 import BeautifulSoup
 from emoji import emojize
-import requests
 import re
 import _pickle as pickle
 
@@ -162,26 +161,20 @@ def add_to_list(user_id, sprinter, ISIN):
 def markets():
     url = 'https://www.ingsprinters.nl/sprinters/'
 
-    r = requests.get(url)
-    if r.status_code == 200:
-        payload = []
-        soup = BeautifulSoup(r.content, "html.parser")
+    r = HTMLSession().get(url)
+    payload = []
 
-        data = soup.find("div", class_="grid grid--wrap grid--align-start")
-        names = data.find_all("a", class_="list-group__label")
+    names = r.html.find('a.list-group__label')
 
-        # To return a list
-        for x in range(0, len(names)):
-            payload.append(names[x].get_text().strip().replace("é", "e"))
+    # To return a list
+    for x in range(0, len(names)):
+        payload.append(names[x].text.strip().replace("é", "e"))
 
-        data = database()
-        with open('database.pkl', 'wb') as file:
-            data["markets"] = payload
-            pickle.dump(data, file)
-        return payload
-
-    else:
-        return None
+    data = database()
+    with open('database.pkl', 'wb') as file:
+        data["markets"] = payload
+        pickle.dump(data, file)
+    return payload
 
 
 # Get market info
@@ -192,21 +185,15 @@ def market_info(market):
 
     url = 'https://www.ingsprinters.nl/sprinters/' + market
 
-    r = requests.get(url)
-    if r.status_code == 200:
-        payload = {}
-        soup = BeautifulSoup(r.content, "html.parser")
+    r = HTMLSession().get(url)
+    payload = {}
 
-        data = soup.find("div", class_="card__body")
-        key = data.find("h2", class_="h4 no-margin").text.strip()
-        value = data.find_all("span")
+    key = r.html.find('h2.h4,no-margin', clean=True)[0].text
+    value = r.html.find('span', clean=True)
 
-        payload[key.replace("*", "")] = value[0].text.strip() + ' ' + value[1].text.strip()
+    payload[key.replace("*", "")] = value[3].text.strip() + ' ' + value[4].text.strip()
 
-        return payload
-
-    else:
-        return None
+    return payload
 
 
 # Get list of current long and short sprinters from a certain market
@@ -216,20 +203,15 @@ def sprinter_list(sprinter):
 
     url = 'https://www.ingsprinters.nl/zoeken?q=' + ' '.join(query[:-1])
 
-    r = requests.get(url)
-    if r.status_code == 200:
-        payload = {}
-        soup = BeautifulSoup(r.content, "html.parser")
+    r = HTMLSession().get(url)
+    payload = {}
+    data = r.html.find('a.fill-cell', clean=True)
 
-        data = soup.find_all("a", class_="fill-cell")
-        for item in data:
-            if query[-1].capitalize() in item.get_text():
-                payload[item.get_text()] = re.sub(r'.*/NL', 'NL', item.get('href'))
+    for item in data:
+        if 'long'.capitalize() in item.text:
+            payload[item.text] = re.sub(r'.*/NL', 'NL', item.attrs["href"])
 
-        return payload
-
-    else:
-        return None
+    return payload
 
 
 # Get data from the sprinter
@@ -239,42 +221,31 @@ def sprinter_list(sprinter):
 def sprinter_info(ISIN):
     url = 'https://www.ingsprinters.nl/zoeken?q=' + ISIN
 
-    r = requests.get(url)
-    if r.status_code == 200:
-        payload = {}
-        soup = BeautifulSoup(r.content, "html.parser")
+    r = HTMLSession().get(url)
+    payload = {}
 
-        data = soup.find("div", class_="meta-block__row")
-        name = data.find_all("h3", class_="meta__heading no-margin")
-        date = data.find_all("span", class_=lambda x: x and x.startswith(
-            'meta__value meta__value--l'))
+    name = r.html.find(selector='h3.meta__heading.no-margin', clean=True)
+    data = r.html.find(selector='span.meta__value.meta__value--l', clean=True)
 
-        for x in range(len(name)):
-            if x < (len(name) - 1):
-                payload[name[x].text.strip()] = date[x].text.strip()
-            else:
-                payload[name[x].text.strip().replace("*", "")] = [date[x].text.strip(), date[6].text.strip()]
-
-        return payload
-
-    else:
-        return None
+    for x in range(len(name)):
+        if x < (len(name) - 1):
+            payload[name[x].text.strip()] = data[x].text.strip()
+        else:
+            payload[name[x].text.strip().replace(
+                "*", "")] = [data[x].text.strip(), data[6].text.strip()]
+    return payload
 
 
 # Checks if the sprinter exists
 def sprinter_check(ISIN):
     url = 'https://www.ingsprinters.nl/zoeken?q=' + ISIN
 
-    r = requests.get(url)
+    r = HTMLSession().get(url)
 
-    if r.status_code == 200:
-        soup = BeautifulSoup(r.content, "html.parser")
-        data = soup.find("div", class_="container")
+    data = r.html.find(selector='span[itemprop=name]')
+    try:
+        data = data[1].text
+    except IndexError:
+        data = None
 
-        if "'noSearchResults': true" in data.text:
-            return False
-        else:
-            market = soup.find_all("span", itemprop="name")[1]
-            return market.text
-    else:
-        return None
+    return data
