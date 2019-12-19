@@ -120,7 +120,7 @@ def add_to_list(user_id, sprinter, ISIN):
     if result == "Beëindigd":
         remove(user_id, (sprinter + ' ' + ISIN))
         return None
-    elif result == None:
+    elif result is None:
         return None
 
     result = sprinter_info(ISIN)
