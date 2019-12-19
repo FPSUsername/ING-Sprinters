@@ -79,9 +79,11 @@ def add(user_id, ISIN):
         if user_id not in data.keys():  # Add user
             new_user(user_id)
 
-        data[user_id]["Track"].setdefault(result, []).append(ISIN)
-
-        message = "Sprinter added!"
+        if ISIN not in data[user_id]["Track"].setdefault(result, []):
+            data[user_id]["Track"].setdefault(result, []).append(ISIN)
+            message = "Sprinter added!"
+        else:
+            message = "Sprinter is already in your list!"
 
         pickle.dump(data, file)
 
