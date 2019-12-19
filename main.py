@@ -172,24 +172,32 @@ def reply(update, context):
 
     elif query_st == "List":
         data = ing_sprinters.database()
-        if data and data[user_id]["Track"].items():
+        track = data[user_id]["Track"].items()
+
+        if data and track:
             message_list = []
-            for key, value in data[user_id]["Track"].items():
+            for key, value in track:
                 for item in value:
-                    message_list.append(ing_sprinters.add_to_list(user_id, key, item))
+                    _item = ing_sprinters.add_to_list(user_id, key, item)
+                    if _item is not None:
+                        message_list.append(_item)
 
-            message_list = list(ing_sprinters.chunks(message_list, 5))  # 5 items per page (message)
+            if message_list == []:
+                message = "Your list has been cleared of non existing sprinters and there's nothing left!"
 
-            for item in message_list[0]:
-                message += item
-            if len(message_list) > 1:
-                data = ing_sprinters.database()
-                with open('database.pkl', 'wb') as file:
-                    data[user_id]["List"] = message_list
-                    pickle.dump(data, file)
+            else:
+                message_list = list(ing_sprinters.chunks(message_list, 5))  # 5 items per page (message)
 
-                keyboard = [[InlineKeyboardButton("Next", callback_data=1)]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
+                for item in message_list[0]:
+                    message += item
+                if len(message_list) > 1:
+                    data = ing_sprinters.database()
+                    with open('database.pkl', 'wb') as file:
+                        data[user_id]["List"] = message_list
+                        pickle.dump(data, file)
+
+                    keyboard = [[InlineKeyboardButton("Next", callback_data=1)]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
         else:
             message = "Your list is empty!"
 
@@ -201,13 +209,14 @@ def reply(update, context):
 
         if data:
             keyboard = [[emojize(":cross_mark:") + " Cancel"]]
+            track = data[user_id]["Track"].items()
 
             reply_markup = ReplyKeyboardMarkup(
                 keyboard=keyboard,
                 resize_keyboard=True,
                 one_time_keyboard=True)
 
-            for key, val in data[user_id]["Track"].items():
+            for key, val in track:
                 for item in val:
                     keyboard.append(["%s %s" % (key, item)])
 
@@ -284,12 +293,12 @@ def ing(update, context):
 
     data = ing_sprinters.database()
     with open('database.pkl', 'rb') as file:
-            try:
-                data = pickle.load(file)
-                if not (sprinter_name in data['markets']):
-                    return None
-            except EOFError:
+        try:
+            data = pickle.load(file)
+            if not (sprinter_name in data['markets']):
                 return None
+        except EOFError:
+            return None
 
     # with open("markets.txt", "r") as file:
     #     if not (sprinter_name in file.read()):
@@ -344,11 +353,11 @@ def inline_query(update, context):
 
         data = ing_sprinters.database()
         with open('database.pkl', 'rb') as file:
-                try:
-                    data = pickle.load(file)
-                    titles = data['markets']
-                except EOFError:
-                    return None
+            try:
+                data = pickle.load(file)
+                titles = data['markets']
+            except EOFError:
+                return None
 
         for item in titles:
             if item.lower().startswith(query.lower()):
@@ -459,8 +468,7 @@ def backup(context):
             os.remove(oldest_file)
             logging.debug("Deleted file: " + oldest_file)
 
-    copy("database.pkl", "Backups/database_" +
-         str(datetime.now().strftime("%Y_%m_%d")) + ".pkl")
+    copy("database.pkl", "Backups/database_" + str(datetime.now().strftime("%Y_%m_%d")) + ".pkl")
 
     logging.debug("Database backed up!")
 

@@ -63,12 +63,13 @@ def settings(user_id, query):
 
 # Add sprinter to database
 def add(user_id, ISIN):
-    market = sprinter_check(ISIN)
+    result = sprinter_check(ISIN)
 
-    if market is False:
-        return None
+    if result == "Beëindigd":
+        message = "This sprinter doesn't exist!"
+        return message
 
-    if market is None:
+    if result is None:
         message = "Something went wrong, try again later!"
         return message
 
@@ -78,7 +79,7 @@ def add(user_id, ISIN):
         if user_id not in data.keys():  # Add user
             new_user(user_id)
 
-        data[user_id]["Track"].setdefault(market, []).append(ISIN)
+        data[user_id]["Track"].setdefault(result, []).append(ISIN)
 
         message = "Sprinter added!"
 
@@ -90,21 +91,21 @@ def add(user_id, ISIN):
 # Remove sprinter from database
 def remove(user_id, query):
     ISIN = query.split()[-1]
-    query = "".join(query.split()[:-1])
+    query = " ".join(query.split()[:-1])
 
     data = database()
+    track = data[user_id]["Track"]
 
     with open('database.pkl', 'wb') as file:
         if user_id not in data.keys():  # Add user
             new_user(user_id)
 
-        try:
-            data[user_id]["Track"][query].remove(ISIN)
-        except ValueError:
+        if track[query] == []:
+            track.pop(query, None)
+        elif ISIN in track[query]:
+            track[query].remove(ISIN)
+        else:
             message = "Sprinter not found!"
-
-        if data[user_id]["Track"][query] == []:
-            data[user_id]["Track"].pop(query, None)
 
         message = "Sprinter removed!"
 
@@ -114,9 +115,15 @@ def remove(user_id, query):
 
 
 def add_to_list(user_id, sprinter, ISIN):
+    result = sprinter_check(ISIN)
+
+    if result == "Beëindigd":
+        remove(user_id, (sprinter + ' ' + ISIN))
+        return None
+    elif result == None:
+        return None
+
     result = sprinter_info(ISIN)
-    if result is None:
-        return ''
 
     data = database()
     data = data[user_id]["Settings"]
@@ -243,6 +250,7 @@ def sprinter_check(ISIN):
     r = HTMLSession().get(url)
 
     data = r.html.find(selector='span[itemprop=name]')
+
     try:
         data = data[1].text
     except IndexError:
