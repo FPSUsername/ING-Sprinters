@@ -9,7 +9,9 @@ from emoji import emojize
 from uuid import uuid4
 
 import ing_sprinters
+import threading
 import logging
+import queue
 import time
 import re
 import os
@@ -167,7 +169,7 @@ def reply(update, context):
             return None
 
     if query_st == "Track":
-        message = "📦 I'm ready. Tell me the sprinter's ISIN. \n\n /cancel"
+        message = "📦 I'm ready. Tell me the sprinter's isin. \n\n /cancel"
         add = True
 
     elif query_st == "List":
@@ -176,11 +178,19 @@ def reply(update, context):
 
         if data and track:
             message_list = []
+            threads = []
+            que = queue.Queue()
             for key, value in track:
                 for item in value:
-                    _item = ing_sprinters.add_to_list(user_id, key, item)
-                    if _item is not None:
-                        message_list.append(_item)
+                    process = threading.Thread(target=lambda q, arg1: q.put(ing_sprinters.add_to_list(arg1)), args=(que, [user_id, key, item]))
+                    process.daemon = True
+                    process.start()
+                    threads.append(process)
+            for process in threads:
+                process.join()
+
+            while not que.empty():
+                message_list.append(que.get())
 
             if message_list == []:
                 message = "Your list has been cleared of non existing sprinters and there's nothing left!"
@@ -202,7 +212,7 @@ def reply(update, context):
             message = "Your list is empty!"
 
     elif query_st == "Remove":
-        message = "📦 I'm ready. Tell me the sprinter's ISIN. \n\n /cancel"
+        message = "📦 I'm ready. Tell me the sprinter's isin. \n\n /cancel"
         remove = True
 
         data = ing_sprinters.database()
@@ -282,14 +292,14 @@ def ing(update, context):
     query = update.message.text.replace("/ing", "").strip()
 
     if not query:
-        message = 'Type the market and ISIN for information about the exchange rate of a sprinter:\n `/ing AEX NL0012065692`'
+        message = 'Type the market and isin for information about the exchange rate of a sprinter:\n `/ing AEX NL0012065692`'
         context.bot.send_message(
             chat_id=update.message.chat_id, text=message, parse_mode='Markdown')
         return None
 
     query = query.split()
     sprinter_name = " ".join(query[:-1])
-    ISIN = query[-1]
+    isin = query[-1]
 
     data = ing_sprinters.database()
     with open('database.pkl', 'rb') as file:
@@ -304,7 +314,7 @@ def ing(update, context):
     #     if not (sprinter_name in file.read()):
     #         return None
 
-    result = ing_sprinters.sprinter_info(ISIN)
+    result = ing_sprinters.sprinter_info(isin)
 
     if result is not None:
         keys = list(result.keys())
@@ -400,11 +410,11 @@ def inline_query(update, context):
         for key, value in sprinters.items():
             key_nr = re.findall(r'\d*\,?\d+', key)
 
-            # If sprinter (key), ISIN (value) or number (inside key) match
+            # If sprinter (key), isin (value) or number (inside key) match
             if key.lower().startswith(query_short) \
                     or value.lower().startswith(query_short) \
                     or (key_nr[-1].startswith(query_nr[-1])):
-                output = sprinter + ' ' + value  # Sprinter + Long/Short + ISIN
+                output = sprinter + ' ' + value  # Sprinter + Long/Short + isin
                 results.append(
                     InlineQueryResultArticle(
                         id=uuid4(),
