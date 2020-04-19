@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 from telegram import ChatAction, InlineQueryResultArticle, InlineQueryResultDocument, ParseMode, InputTextMessageContent, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, InlineQueryHandler, CallbackQueryHandler, MessageHandler, Filters
 from telegram.utils.helpers import escape_markdown
