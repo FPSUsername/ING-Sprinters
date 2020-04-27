@@ -4,6 +4,7 @@ from telegram.ext import Updater, CommandHandler, InlineQueryHandler, CallbackQu
 from telegram.utils.helpers import escape_markdown
 from six.moves import cPickle as pickle
 from datetime import datetime
+from tabulate import tabulate
 from functools import wraps
 from shutil import copy
 from emoji import emojize
@@ -193,6 +194,8 @@ def reply(update, context):
             while not que.empty():
                 message_list.append(que.get())
 
+            message_list.sort()
+
             if message_list == []:
                 message = "Your list has been cleared of non existing sprinters and there's nothing left!"
 
@@ -201,12 +204,15 @@ def reply(update, context):
 
                 for item in message_list[0]:
                     message += item
-                if len(message_list) > 1:
+                if len(message_list) > 1:  # Paging
+
+                    # What does this do?
                     data = ing_sprinters.database()
                     with open('database.pkl', 'wb') as file:
                         data[user_id]["List"] = message_list
                         pickle.dump(data, file)
 
+                    # Paging
                     keyboard = [[InlineKeyboardButton("Next", callback_data=1)]]
                     reply_markup = InlineKeyboardMarkup(keyboard)
         else:

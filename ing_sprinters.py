@@ -102,12 +102,11 @@ def remove(user_id, query):
         if user_id not in data.keys():  # Add user
             new_user(user_id)
 
-        if track[query] == []:
-            track.pop(query, None)
-        elif isin in track[query]:
-            track[query].remove(isin)
-        else:
-            message = "Sprinter not found!"
+        if query in track:
+            if isin in track[query]:
+                track[query].remove(isin)
+            if track[query] == []:
+                track.pop(query, None)
 
         message = "Sprinter removed!"
 
@@ -139,6 +138,7 @@ def add_to_list(myList):
     values = list(result.values())
 
     message = ""
+    table = []
     val1 = ""
     val2 = ""
 
@@ -168,6 +168,24 @@ def add_to_list(myList):
     if data["Referentie"] == "✅Enabled":
         message += ("\n*%s*   _%s_ _%s_ _%s_\n\n" % (keys[5], val2, values[5][0], values[5][1]))
 
+
+    # table.append(['[' + sprinter + '](https://www.ingsprinters.nl/markten/indices/' + sprinter + ')'])
+    # if data["isin"] == "✅Enabled":
+    #     table.append(["*isin*", "[%s](https://www.ingsprinters.nl/zoeken?q=%s)" % (isin, isin)])
+    # if data["Bied"] == "✅Enabled":
+    #     table.append(["*%s*" % keys[0], "_%s_" % values[0]])
+    # if data["Laat"] == "✅Enabled":
+    #     table.append(["*%s*" % keys[1], "_%s_" % values[1]])
+    # if data["%1 dag"] == "✅Enabled":
+    #     table.append(["*%s*" % keys[2], "_%s_" % val1, "_%s_" % values[2]])
+    # if data["Hefboom"] == "✅Enabled":
+    #     table.append(["*%s*" % keys[3], "_%s_" % values[3]])
+    # if data["Stop loss-niveau"] == "✅Enabled":
+    #     table.append(["*%s*" % keys[4], "_%s_" % values[4]])
+    # if data["Referentie"] == "✅Enabled":
+    #     table.append(["*%s*" % keys[5], "_%s_" % val2, "_%s_" % values[5][0], "_%s_" % values[5][1]])
+
+    # Returns list of lists
     return message
 
 
