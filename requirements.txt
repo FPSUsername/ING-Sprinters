@@ -1,4 +1,4 @@
-python-telegram-bot>=12.2.0
+python-telegram-bot>=13.1
 uuid>=1.30
-emoji>=0.5.4
-requests-html>=0.10
+emoji>=1.1.0
+requests-html>=0.10.0

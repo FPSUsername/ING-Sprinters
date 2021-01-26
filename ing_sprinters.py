@@ -123,10 +123,10 @@ def add_to_list(myList):
 
     if result == "Beëindigd":
         remove(user_id, (sprinter + ' ' + isin))
-        message = '[' + sprinter + '](https://www.ingsprinters.nl/markten/indices/' + sprinter + ') is removed.'
+        message = '[' + sprinter + '](https://www.ingsprinters.nl/markten/indices/' + sprinter + ') is removed.\n'
         return message
     elif result is None:
-        message = '[' + sprinter + '](https://www.ingsprinters.nl/markten/indices/' + sprinter + ') could not be found or loaded.'
+        message = '[' + sprinter + '](https://www.ingsprinters.nl/markten/indices/' + sprinter + ') could not be found or loaded.\n'
         return message
 
     result = sprinter_info(isin)

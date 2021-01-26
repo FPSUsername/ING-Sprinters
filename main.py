@@ -4,7 +4,6 @@ from telegram.ext import Updater, CommandHandler, InlineQueryHandler, CallbackQu
 from telegram.utils.helpers import escape_markdown
 from six.moves import cPickle as pickle
 from datetime import datetime
-from tabulate import tabulate
 from functools import wraps
 from shutil import copy
 from emoji import emojize
@@ -25,7 +24,7 @@ add = False  # User selected Track
 remove = False  # User selected Remove
 
 keyboard = [
-    ["➕ Track",
+    [emojize(':heavy_plus_sign:') + " Track",
      emojize(':page_with_curl:') + " List",
      emojize(':wastebasket:') + " Remove",
      emojize(':gear:') + " Settings"]
@@ -171,7 +170,14 @@ def reply(update, context):
             return None
 
     if query_st == "Track":
-        message = "📦 I'm ready. Tell me the sprinter's isin. \n\n /cancel"
+        message = "📦 I'm ready. Tell me the sprinter's isin."
+        keyboard = [[emojize(":cross_mark:") + " Cancel"]]
+
+        reply_markup = ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True,
+            one_time_keyboard=True)
+
         add = True
 
     elif query_st == "List":
@@ -219,7 +225,7 @@ def reply(update, context):
             message = "Your list is empty!"
 
     elif query_st == "Remove":
-        message = "📦 I'm ready. Tell me the sprinter's isin. \n\n /cancel"
+        message = "📦 I'm ready. Tap on the sprinter that you want to remove."
         remove = True
 
         data = ing_sprinters.database()
@@ -228,14 +234,15 @@ def reply(update, context):
             keyboard = [[emojize(":cross_mark:") + " Cancel"]]
             track = data[user_id]["Track"].items()
 
+            for key, val in track:
+                for item in val:
+                    keyboard.append(["%s %s" % (key, item)])
+
             reply_markup = ReplyKeyboardMarkup(
                 keyboard=keyboard,
                 resize_keyboard=True,
                 one_time_keyboard=True)
 
-            for key, val in track:
-                for item in val:
-                    keyboard.append(["%s %s" % (key, item)])
 
     elif query_st == "Settings":
         keyboard = []
